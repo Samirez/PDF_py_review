@@ -1,0 +1,7 @@
+aiofiles
+aiohttp
+tqdm
+pandas
+PyPDF2
+requests
+openpyxl
