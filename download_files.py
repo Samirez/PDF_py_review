@@ -8,14 +8,14 @@ Downloads PDF reports from URLs in Excel file.
 Produces a log showing downloaded / not downloaded status.
 """
 
-#### IF error : "ModuleNotFOundError: no module named PyPDF2"
+#### IF error : "ModuleNotFOundError: no module named pypdf"
 # then uncomment line below (i.e. remove the #):
 
-# pip install PyPDF2
+# pip install pypdf
 
 
 import pandas as pd
-import PyPDF2
+from pypdf import PdfReader
 import os
 import socket
 import glob
@@ -37,107 +37,106 @@ pth = "C:\\Users\\SPAC-O-9\\OneDrive - Specialisterne\\Dokumenter\\Specialistern
 # Download subfolder (PDFs saved here)
 dwn_pth = os.path.join(pth, "dwn")
 
-# Create download folder if it doesn't exist
-os.makedirs(dwn_pth, exist_ok=True)
-
 ###specify the ID column name
 ID = "BRnum"
 
-### cheack for files already downloaded
-dwn_files = glob.glob(os.path.join(dwn_pth, "*.pdf"))
-exist = [os.path.basename(f)[:-4] for f in dwn_files]
-
 ##########
 
-### read in file
-df = pd.read_excel(list_pth, sheet_name=0, index_col=ID)
+############ Download function
+def download_file(args):
+    brnum, url, output_dir, timeout = args
+    savefile = os.path.join(output_dir, str(brnum) + ".pdf")
 
-## Filter out rows with no URL, check Report HTML Address if Pdf_URL is missing
+    try:
+        response = requests.get(url, stream=True, timeout=timeout)
+        response.raise_for_status()
 
-if "Pdf_URL" not in df.columns:
-    df["Pdf_URL"] = None
+        with open(savefile, "wb") as file:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    file.write(
+                        chunk
+                    )  # The `chunk_size=8192` parameter helps manage memory usage when downloading large files by reading the content in smaller pieces.
+        # PDF validation
+        try:
+            with open(savefile, "rb") as f:
+                reader = PdfReader(f)
+                if len(reader.pages) > 0:
+                    return brnum, "Downloaded", None
+                else:
+                    return brnum, "Ikke downloaded - PDF has no pages", None
 
-if "Report HTML Address" in df.columns:
-    df["Pdf_URL"] = df["Pdf_URL"].fillna(
-        df["Report HTML Address"]
-    )  # map it to Pdf_URL so rest of script works
-df = df[df["Pdf_URL"].notnull()]
+        except Exception as e:
+            return brnum, "Ikke downloaded", str(e)
+    except Exception as e:
+        return brnum, "Ikke downloaded", str(e)
 
-if df.empty:
-    print("No URL column found or no URLs present — please check your Excel file")
-else:
+def download_multiple_files(args_list, df2):
+    # Download files using thread pool
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = {
+            executor.submit(download_file, args): args[0] for args in args_list
+        }
+        progress = tqdm(
+            as_completed(futures),
+            total=len(futures),
+            desc="Downloading PDFs",
+            unit="file",
+            leave=True,
+        )
+        for i, future in enumerate(progress, 1):
+            try:
+                brnum, status, error = future.result(timeout=30)
+                # Here you can log the result (e.g., update df2 with status)
+            except Exception as e:
+                brnum = futures[future]
+                status = "Ikke downloaded"
+                error = str(e)
+            df2.at[brnum, "pdf_downloaded"] = status
+            if error:
+                df2.at[brnum, "download_error"] = error
+            progress.set_postfix_str(f"{brnum}: {status}")
+
+def main():
+    # Create download folder if it doesn't exist
+    os.makedirs(dwn_pth, exist_ok=True)
+    
+    ### check for files already downloaded
+    dwn_files = glob.glob(os.path.join(dwn_pth, "*.pdf"))
+    exist = [os.path.basename(f)[:-4] for f in dwn_files]
+    
+    ### read in file
+    df = pd.read_excel(list_pth, sheet_name=0, index_col=ID)
+
+    ## Filter out rows with no URL, check Report HTML Address if Pdf_URL is missing
+    if "Pdf_URL" not in df.columns:
+        df["Pdf_URL"] = None
+
+    if "Report HTML Address" in df.columns:
+        df["Pdf_URL"] = df["Pdf_URL"].fillna(
+            df["Report HTML Address"]
+        )  # map it to Pdf_URL so rest of script works
+    df = df[df["Pdf_URL"].notnull()]
+
+    if df.empty:
+        print("No URL column found or no URLs present — please check your Excel file")
+        return
+    
     df2 = df.copy()
 
     ### filter out rows that have been downloaded
     df2 = df2[~df2.index.isin(exist)]
     print(f"{len(df2)} files to download, {len(exist)} already downloaded.")
-
-    ############ Download function
-    def download_file(args):
-        brnum, url, output_dir, timeout = args
-        savefile = os.path.join(output_dir, str(brnum) + ".pdf")
-
-        try:
-            response = requests.get(url, stream=True, timeout=timeout)
-            response.raise_for_status()
-
-            with open(savefile, "wb") as file:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        file.write(
-                            chunk
-                        )  # The `chunk_size=8192` parameter helps manage memory usage when downloading large files by reading the content in smaller pieces.
-            # PDF validation
-            try:
-                with open(savefile, "rb") as f:
-                    reader = PyPDF2.PdfReader(f)
-                    if len(reader.pages) > 0:
-                        return brnum, "Downloaded", None
-                    else:
-                        return brnum, "Ikke downloaded - PDF has no pages", None
-
-            except Exception as e:
-                return brnum, "Ikke downloaded", str(e)
-        except Exception as e:
-            return brnum, "Ikke downloaded", str(e)
-
-    def download_multiple_files(args_list):
-
-        # Download files using thread pool
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            futures = {
-                executor.submit(download_file, args): args[0] for args in args_list
-            }
-            progress = tqdm(
-                as_completed(futures),
-                total=len(futures),
-                desc="Downloading PDFs",
-                unit="file",
-                leave=True,
-            )
-            for i, future in enumerate(progress, 1):
-                try:
-                    brnum, status, error = future.result(timeout=30)
-                    # Here you can log the result (e.g., update df2 with status)
-                except Exception as e:
-                    brnum = futures[future]
-                    status = "Ikke downloaded"
-                    error = str(e)
-                df2.at[brnum, "pdf_downloaded"] = status
-                if error:
-                    df2.at[brnum, "download_error"] = error
-                progress.set_postfix_str(f"{brnum}: {status}")
-
-        # Process results
-
-    def main():
-        args_list = [
-            (brnum, df2.at[brnum, "Pdf_URL"], dwn_pth, 15) for brnum in df2.index
-        ]
-        download_multiple_files(args_list)
-
-    main()
+    
+    args_list = [
+        (brnum, df2.at[brnum, "Pdf_URL"], dwn_pth, 15) for brnum in df2.index
+    ]
+    download_multiple_files(args_list, df2)
+    
     print(f"Downloaded:     {(df2['pdf_downloaded'] == 'Downloaded').sum()}")
     print(f"Not downloaded: {(df2['pdf_downloaded'] != 'Downloaded').sum()}")
     log_path = os.path.join(pth, "download_log.xlsx")
     df2.to_excel(log_path)
+
+if __name__ == "__main__":
+    main()

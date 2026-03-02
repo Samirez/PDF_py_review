@@ -5,14 +5,14 @@ Created on Sun Oct 13 15:37:08 2019
 
 """
 
-#### IF error : "ModuleNotFOundError: no module named PyPDF2"
+#### IF error : "ModuleNotFOundError: no module named pypdf"
 # then uncomment line below (i.e. remove the #):
 
-# pip install PyPDF2 pandas requests openpyxl tqdm
+# pip install pypdf pandas requests openpyxl tqdm
 
 
 import pandas as pd
-import PyPDF2
+from pypdf import PdfReader
 import os
 import socket
 import glob
@@ -96,7 +96,7 @@ def check_if_valid_pdf(savefile):
     # PDF validation
     try:
         with open(savefile, "rb") as f:
-            reader = PyPDF2.PdfReader(f)
+            reader = PdfReader(f)
             return len(reader.pages) > 0
     except Exception:
         return False

@@ -7,13 +7,18 @@ import sys
 import os
 from dataclasses import dataclass
 from typing import Optional
+from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+# Get paths from environment variables or use relative defaults
+_test_dir = Path(__file__).parent.parent  # PDF_py_review directory
+_default_list_pth = str(_test_dir / "GRI_2017_2020 (1).xlsx")
+_default_data_pth = str(_test_dir / "Data")
 
 CONFIG = {
-    "list_pth": r"C:\\Users\\SPAC-O-9\\OneDrive - Specialisterne\\Dokumenter\\Specialisterne_kursus\\PDF_downloader_uge_5\\PDF_py_review\\GRI_2017_2020 (1).xlsx", # path to Excel file with URLs
-    "pth": r"C:\\Users\\SPAC-O-9\\OneDrive - Specialisterne\\Dokumenter\\Specialisterne_kursus\\PDF_downloader_uge_5\\PDF_py_review\\Data\\", 
+    "list_pth": os.getenv("LIST_PTH", _default_list_pth),  # path to Excel file with URLs
+    "pth": os.getenv("DATA_PTH", _default_data_pth),  # path to data directory
     "ID": "BRnum",
     "url_column": "Pdf_URL",  # column AL
     "other_url_column": "Report HTML Address",  # column AM
@@ -24,9 +29,7 @@ CONFIG = {
 }
 
 def check_col_for_url(list_pth, ID, url_column, other_url_column):
-    # Minimal test helper that returns a DataFrame with the requested URL columns
-    list_pth=CONFIG["list_pth"]
-    df = pd.read_excel(list_pth, sheet_name=0, index_col=ID)
+    # Minimal test helper that returns a mock DataFrame with the requested URL columns
     data: dict[str, list[Optional[str]]] = {
         ID: ["12345"],
         url_column: ["https://www.shuyiwrites.com/uploads/1/3/0/4/130438914/how_to_write_and_publish_a_scientific_paper.pdf"],
@@ -34,7 +37,6 @@ def check_col_for_url(list_pth, ID, url_column, other_url_column):
     if other_url_column:
         data[other_url_column] = [None]
     return pd.DataFrame(data)
-
 @dataclass
 class DownloadTask:  # A simple data class to hold the parameters for a single download attempt
     brnum: str

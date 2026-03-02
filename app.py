@@ -125,7 +125,7 @@ async def download_file(task, sess, sem):
                         
             # The `chunk_size=8192` parameter helps manage memory usage when downloading large files by reading the content in smaller pieces.
             # PDF validation
-            # Validation is done in a separate thread to avoid blocking the event loop, since PyPDF2 is not asynchonous.
+            # Validation is done in a separate thread to avoid blocking the event loop, since pypdf is not asynchonous.
             valid = await asyncio.get_running_loop().run_in_executor(
                 None, check_if_valid_pdf, savefile
                 )
