@@ -19,3 +19,4 @@ docs/
 
 tests/
 *.test.py
+*testing/

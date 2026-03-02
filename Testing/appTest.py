@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 import aiohttp
+import asyncio
 
 async def fetch_pdf(session, url):
     print(f"Fetching PDF from URL: {url}", flush=True)
@@ -45,4 +46,10 @@ async def test_fetch_pdf_failure():
             assert "Failed to fetch PDF" in str(exc_info.value)
 
 
+async def main():
+    await test_fetch_pdf_success()
+    await test_fetch_pdf_failure()
+    print("All tests passed!", flush=True)
 
+if __name__ == "__main__":
+    asyncio.run(main())
