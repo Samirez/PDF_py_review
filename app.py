@@ -5,10 +5,10 @@ PDF Downloader - GRI 2017-2020 (1)
 Downloads PDF reports from URLs in Excel file.
 """
 
-#### IF error : "ModuleNotFOundError: no module named PyPDF2"
+#### IF error : "ModuleNotFOundError: no module named pypdf"
 # then uncomment line below (i.e. remove the #):
 
-# pip install PyPDF2 pandas tqdm aiohttp aiofiles tqdm-asyncio aiofiles
+# pip install pypdf pandas tqdm aiohttp aiofiles
 
 
 import aiofiles
@@ -18,7 +18,7 @@ from tqdm.asyncio import tqdm
 
 
 import pandas as pd
-import PyPDF2
+from pypdf import PdfReader
 import os
 import socket
 import glob
@@ -32,7 +32,7 @@ CONFIG = {
     #"list_pth": "/data/GRI_2017_2020 (1).xlsx", # path to Excel file with URLs
     #"pth": "/data", # base path for downloads and logs - downloaded PDFs will be saved in a "dwn" subfolder, logs will be saved in the base path
     "list_pth": r"C:\Users\SPAC-O-6\Desktop\PDF_py\GRI_2017_2020 (1).xlsx", # path to Excel file with URLs
-    "pth": r"C:\Users\SPAC-O-6\Desktop\PDF_py", 
+    "pth": r"C:\Users\SPAC-O-6\Desktop\PDF_py", #!!!! use environment variables for paths to make it more flexible and compatible with different environments (e.g. local, cloud, container)
     "ID": "BRnum",
     "url_column": "Pdf_URL",  # column AL
     "other_url_column": "Report HTML Address",  # column AM
@@ -97,7 +97,7 @@ def check_if_valid_pdf(savefile):
     # PDF validation
     try:
         with open(savefile, "rb") as f:
-            reader = PyPDF2.PdfReader(f)
+            reader = PdfReader(f)
             return len(reader.pages) > 0
     except Exception:
         return False

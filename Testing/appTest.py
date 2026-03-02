@@ -2,17 +2,46 @@ import pytest
 from unittest.mock import AsyncMock, patch
 import aiohttp
 import asyncio
+import pandas as pd
+import sys
+import os
 from dataclasses import dataclass
 from typing import Optional
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+
+CONFIG = {
+    "list_pth": r"C:\\Users\\SPAC-O-9\\OneDrive - Specialisterne\\Dokumenter\\Specialisterne_kursus\\PDF_downloader_uge_5\\PDF_py_review\\GRI_2017_2020 (1).xlsx", # path to Excel file with URLs
+    "pth": r"C:\\Users\\SPAC-O-9\\OneDrive - Specialisterne\\Dokumenter\\Specialisterne_kursus\\PDF_downloader_uge_5\\PDF_py_review\\Data\\", 
+    "ID": "BRnum",
+    "url_column": "Pdf_URL",  # column AL
+    "other_url_column": "Report HTML Address",  # column AM
+    "max_workers": 10,  # parallel downloads
+    "download_timeout": 30,  # seconds before a download is considered failed
+    "Prototype": False,  # if True, only download first 10 files for testing
+    "Prototype_count": 100,  # number of files to download in prototype mode
+}
+
+def check_col_for_url(list_pth, ID, url_column, other_url_column):
+    # Minimal test helper that returns a DataFrame with the requested URL columns
+    list_pth=CONFIG["list_pth"]
+    df = pd.read_excel(list_pth, sheet_name=0, index_col=ID)
+    data: dict[str, list[Optional[str]]] = {
+        ID: ["12345"],
+        url_column: ["https://www.shuyiwrites.com/uploads/1/3/0/4/130438914/how_to_write_and_publish_a_scientific_paper.pdf"],
+    }
+    if other_url_column:
+        data[other_url_column] = [None]
+    return pd.DataFrame(data)
+
 @dataclass
-class DownloadTask:  # A simple data class to hold the result of a single download attempt
+class DownloadTask:  # A simple data class to hold the parameters for a single download attempt
     brnum: str
     url_column: str
     other_url_column: Optional[str]
     output_dir: str
     timeout: int
-
 
 @dataclass
 class DownloadResult:  # A simple data class to hold the status of a download attempt
@@ -21,8 +50,7 @@ class DownloadResult:  # A simple data class to hold the status of a download at
     url_used: str  # the URL that was actually used for the download attempt (either from url_column or other_url_column)
     error: Optional[str]
 
-@pytest.mark.asyncio
-async def test_download_task():
+def test_download_task():
     # Example of creating a DownloadTask instance
     task = DownloadTask(
         brnum="12345",
@@ -38,8 +66,7 @@ async def test_download_task():
     assert task.timeout == 30
 
 
-@pytest.mark.asyncio
-async def test_download_result():
+def test_download_result():
     # Example of creating a DownloadResult instance
     result = DownloadResult(
         brnum="12345",
@@ -51,6 +78,42 @@ async def test_download_result():
     assert result.status == "Downloaded"
     assert result.url_used == "https://bcuathletics.com/documents/2026/3/1/BGSU3126.pdf"
     assert result.error is None
+
+
+def test_check_col_for_url():
+    # Test the check_col_for_url function with CONFIG values
+    try:
+        df = check_col_for_url(
+            CONFIG["list_pth"],
+            CONFIG["ID"],
+            CONFIG["url_column"],
+            CONFIG["other_url_column"]
+        )
+        assert isinstance(df, pd.DataFrame)
+    except Exception as e:
+        pytest.fail(f"check_col_for_url raised an exception: {e}")
+
+
+@pytest.mark.asyncio
+async def test_check_existing_files():
+    from app import check_exiting_files
+    # This test would check the check_exiting_files function, but since it interacts with the file system, we can just assert that it returns a list (you would normally mock the file system interactions)
+    try:
+        exist = check_exiting_files("./downloads")
+        assert isinstance(exist, list)
+    except Exception as e:
+        pytest.fail(f"check_exiting_files raised an exception: {e}")
+
+
+@pytest.mark.asyncio
+async def test_check_if_valid_pdf():
+    from app import check_if_valid_pdf
+    # This test would check the check_if_valid_pdf function, but since it interacts with the file system, we can just assert that it returns a boolean (you would normally mock the file system interactions)
+    try:
+        is_valid = check_if_valid_pdf("./downloads/test.pdf")
+        assert isinstance(is_valid, bool)
+    except Exception as e:
+        pytest.fail(f"check_if_valid_pdf raised an exception: {e}")
 
 
 @pytest.mark.asyncio

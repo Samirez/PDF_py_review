@@ -2,6 +2,6 @@ aiofiles
 aiohttp
 tqdm
 pandas
-PyPDF2
+pypdf
 requests
 openpyxl
