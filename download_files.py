@@ -31,9 +31,9 @@ socket.setdefaulttimeout(15)  # Global timeout for all URL requests
 ########## EDIT PATH HERE:
 
 ### specify path to file containing the URLs
-list_pth = "C:\\Users\\SPAC-O-6\\Downloads\\Data\\Data\\GRI_2017_2020 (1).xlsx"
+list_pth = "C:\\Users\\SPAC-O-9\\OneDrive - Specialisterne\\Dokumenter\\Specialisterne_kursus\\PDF_downloader_uge_5\\PDF_py_review\\GRI_2017_2020 (1).xlsx"
 ###specify Output folder (in this case it moves one folder up and saves in the script output folder)
-pth = "C:\\Users\\SPAC-O-6\\Downloads\\Data\\Data\\"
+pth = "C:\\Users\\SPAC-O-9\\OneDrive - Specialisterne\\Dokumenter\\Specialisterne_kursus\\PDF_downloader_uge_5\\PDF_py_review\\Data\\"
 # Download subfolder (PDFs saved here)
 dwn_pth = os.path.join(pth, "dwn")
 
