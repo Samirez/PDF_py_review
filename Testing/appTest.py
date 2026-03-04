@@ -256,4 +256,4 @@ if __name__ == "__main__":
         print("\n✅ All tests passed!", flush=True)
     else:
         print("\n❌ Some tests failed!", flush=True)
-    exit(exit_code)
+    sys.exit(exit_code)

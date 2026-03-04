@@ -76,29 +76,72 @@ def test_integration_download_valid_pdf(tmp_path):
 def test_integration_skip_existing_files(tmp_path):
     """
     Integration test: Verify that already-downloaded files are not re-downloaded.
+    Simulates the main() workflow: filters existing files and only downloads new ones.
     Prevents accidental overwriting and reduces network traffic.
     """
     dwn_pth = tmp_path / "dwn"
     dwn_pth.mkdir()
     
-    # Create pre-existing PDF
+    # Create pre-existing PDF for BR001
     existing_pdf = dwn_pth / "BR001.pdf"
     original_content = create_minimal_valid_pdf_bytes()
     existing_pdf.write_bytes(original_content)
     original_size = existing_pdf.stat().st_size
     
+    # Create DataFrame with two rows (one existing, one new)
+    df2 = pd.DataFrame({
+        "BRnum": ["BR001", "BR002"],
+        "Pdf_URL": [
+            "https://example.com/existing.pdf",
+            "https://example.com/new.pdf"
+        ]
+    }).set_index("BRnum")
+    df2["pdf_downloaded"] = None
+    df2["download_error"] = None
+    
     with patch("download_pdf_improved.requests.get") as mock_get:
         mock_response = MagicMock()
         mock_response.raise_for_status = MagicMock()
-        mock_response.iter_content.return_value = [b"DIFFERENT_CONTENT"]
+        # Return valid PDF (not the original content) to prove it's a new download
+        mock_response.iter_content.return_value = [create_minimal_valid_pdf_bytes()]
         mock_get.return_value = mock_response
         
-        # Verify file is in existing list
+        # Simulate main() logic: filter out existing files before creating tasks
         existing = check_existing_files(str(dwn_pth))
-        assert "BR001" in existing
+        df_to_download = df2[~df2.index.isin(existing)]  # Only BR002
         
-        # File size should remain unchanged
-        assert existing_pdf.stat().st_size == original_size
+        # Verify filtering worked
+        assert "BR001" in existing
+        assert len(df_to_download) == 1
+        assert "BR002" in df_to_download.index
+        
+        # Create tasks only for non-existing files
+        tasks = [
+            DownloadTask(
+                brnum=brnum,
+                url_column=str(df_to_download.at[brnum, "Pdf_URL"]),
+                other_url_column=None,
+                output_dir=str(dwn_pth),
+                timeout=30
+            )
+            for brnum in df_to_download.index
+        ]
+        
+        # Execute download for filtered list (only BR002)
+        df2 = download_multiple_files(tasks, df2, max_workers=1)
+        
+        # Verify existing file (BR001) was NOT modified
+        assert existing_pdf.exists()
+        assert existing_pdf.stat().st_size == original_size  # Size unchanged
+        assert existing_pdf.read_bytes() == original_content  # Content unchanged
+        
+        # Verify new file (BR002) WAS downloaded
+        new_pdf = dwn_pth / "BR002.pdf"
+        assert new_pdf.exists()
+        assert df2.at["BR002", "pdf_downloaded"] == "Downloaded"
+        
+        # Verify requests.get was only called once (for BR002, not BR001)
+        assert mock_get.call_count == 1
 
 
 @pytest.mark.integration
@@ -127,7 +170,10 @@ def test_integration_batch_download_mixed_results(tmp_path):
         mock_response.raise_for_status = MagicMock()
         
         if "error" in url:
-            mock_response.raise_for_status.side_effect = Exception("404 Not Found")
+            error = Exception("404 Not Found")
+            mock_response.raise_for_status.side_effect = error
+            # Also configure iter_content to prevent it from returning an unconfigured MagicMock
+            mock_response.iter_content.side_effect = error
         else:
             mock_response.iter_content.return_value = [create_minimal_valid_pdf_bytes()]
         
