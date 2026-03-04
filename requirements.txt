@@ -7,3 +7,5 @@ requests
 openpyxl
 flake8
 pytest
+pytest-asyncio
+pytest-cov
