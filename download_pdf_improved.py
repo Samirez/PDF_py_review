@@ -134,8 +134,7 @@ def download_file(task):
         except Exception as e:
             last_error = str(e)
             logger.warning(
-    f"Ikke downloaded {
-        task.brnum} from {url} - {last_error}")
+    f"Ikke downloaded {task.brnum} from {url} - {last_error}")
             continue
 
     return DownloadResult(
