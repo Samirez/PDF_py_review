@@ -6,6 +6,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app.py /app/
-COPY "GRI_2017_2020 (1).xlsx" /app/
+COPY ["GRI_2017_2020 (1).xlsx", "/app/"]
 
 CMD ["python", "./app.py"]
