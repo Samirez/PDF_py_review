@@ -5,3 +5,5 @@ pandas
 pypdf
 requests
 openpyxl
+flake8
+pytest
