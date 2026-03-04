@@ -32,7 +32,7 @@ CONFIG = {
     "Prototype_count": 100,  # number of files to download in prototype mode
 }
 
-def check_col_for_url(_list_pth, ID, url_column, other_url_column):
+def check_col_for_url(list_pth, ID, url_column, other_url_column):
     # Minimal test helper that returns a mock DataFrame with the requested URL columns
     data: dict[str, list[Optional[str]]] = {
         ID: ["12345"],
@@ -102,29 +102,30 @@ def test_check_col_for_url():
         pytest.fail(f"check_col_for_url raised an exception: {e}")
 
 
-@pytest.mark.asyncio
-async def test_check_existing_files():
+def test_check_existing_files(tmp_path):
     import app
     check_existing_files = getattr(app, "check_existing_files", None)
     if check_existing_files is None:
         pytest.skip("check_existing_files is not available in app module")
-    # This test would check the check_existing_files function, but since it interacts with the file system, we can just assert that it returns a list (you would normally mock the file system interactions)
+    # Deterministic filesystem setup in an isolated temporary directory
     try:
-        exist = check_existing_files("./downloads")
-        assert isinstance(exist, list)
+        (tmp_path / "a.pdf").write_bytes(b"%PDF-1.4\n")
+        (tmp_path / "b.pdf").write_bytes(b"%PDF-1.4\n")
+        result = check_existing_files(str(tmp_path))
+        assert isinstance(result, list)
     except Exception as e:
         pytest.fail(f"check_existing_files raised an exception: {e}")
 
 
-@pytest.mark.asyncio
-async def test_check_if_valid_pdf():
+def test_check_if_valid_pdf(tmp_path):
     import app
     check_if_valid_pdf = getattr(app, "check_if_valid_pdf", None)
     if check_if_valid_pdf is None:
         pytest.skip("check_if_valid_pdf is not available in app module")
-    # This test would check the check_if_valid_pdf function, but since it interacts with the file system, we can just assert that it returns a boolean (you would normally mock the file system interactions)
+    test_pdf = tmp_path / "test.pdf"
+    test_pdf.write_bytes(b"%PDF-1.4\n")
     try:
-        is_valid = check_if_valid_pdf("./downloads/test.pdf")
+        is_valid = check_if_valid_pdf(str(test_pdf))
         assert isinstance(is_valid, bool)
     except Exception as e:
         pytest.fail(f"check_if_valid_pdf raised an exception: {e}")

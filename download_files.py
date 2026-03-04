@@ -19,7 +19,7 @@ import os
 import socket
 import glob
 import requests
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 from tqdm import tqdm
 
 socket.setdefaulttimeout(15)  # Global timeout for all URL requests
@@ -91,8 +91,13 @@ def download_multiple_files(args_list, df2):
         )
         for i, future in enumerate(progress, 1):
             try:
-                brnum, status, error = future.result()
+                brnum, status, error = future.result(timeout=90)
                 # Here you can log the result (e.g., update df2 with status)
+            except TimeoutError:
+                brnum = futures[future]
+                status = "Ikke downloaded"
+                error = "timeout"
+                future.cancel()
             except Exception as e:
                 brnum = futures[future]
                 status = "Ikke downloaded"
@@ -139,8 +144,11 @@ def main():
     
     if args_list:
         download_multiple_files(args_list, df2)
-        print(f"Downloaded:     {(df2['pdf_downloaded'] == 'Downloaded').sum()}")
-        print(f"Not downloaded: {(df2['pdf_downloaded'] != 'Downloaded').sum()}")
+        if 'pdf_downloaded' in df2.columns:
+            print(f"Downloaded:     {(df2['pdf_downloaded'] == 'Downloaded').sum()}")
+            print(f"Not downloaded: {(df2['pdf_downloaded'] != 'Downloaded').sum()}")
+        else:
+            print("Warning: pdf_downloaded column was not created. Unable to report statistics.")
     else:
         print("No new files to download.")
     

@@ -5,7 +5,8 @@ Created on Sun Oct 13 15:37:08 2019
 
 """
 
-#### IF error : "ModuleNotFoundError: no module named pypdf"# then uncomment line below (i.e. remove the #):
+#### IF error : "ModuleNotFoundError: no module named pypdf"
+#### then uncomment line below (i.e. remove the #):
 
 # pip install pypdf pandas requests openpyxl tqdm
 
@@ -39,20 +40,7 @@ CONFIG = {
 ########################################################
 
 ### Set up logging ###
-# Ensure the log directory exists
-os.makedirs(CONFIG["pth"], exist_ok=True)
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler(os.path.join(CONFIG["pth"], "download_log_improved.log")),  # Log to file
-        logging.StreamHandler(),  # Log to console
-    ],
-)
-
 logger = logging.getLogger(__name__)
-socket.setdefaulttimeout(CONFIG["download_timeout"])
 
 ### SoC: don't write your program as one solid block, instead, break up the code into chunks that are finalized tiny pieces of the system ####
 ### Classes and functions should be defined at the top, then the main execution code should be at the bottom, ideally in a main() function. This way, you can test and debug individual pieces of the code without having to run the entire program.
@@ -91,7 +79,7 @@ def check_col_for_url(list_pth, ID, url_column, other_url_column):
 def check_existing_files(dwn_pth):
     """Return list of existing PDF basenames without .pdf extension."""
     dwn_files = glob.glob(os.path.join(dwn_pth, "*.pdf"))
-    exist = [os.path.basename(f)[:-4] for f in dwn_files]
+    exist = [os.path.splitext(os.path.basename(f))[0] for f in dwn_files]
     return exist
 
 
@@ -180,7 +168,22 @@ def download_multiple_files(tasks, df2, max_workers):
     return df2
 
 
+def init_logging_and_dirs():
+    pth = CONFIG["pth"]
+    os.makedirs(pth, exist_ok=True)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.FileHandler(os.path.join(pth, "download_log_improved.log")),  # Log to file
+            logging.StreamHandler(),  # Log to console
+        ],
+    )
+    socket.setdefaulttimeout(CONFIG["download_timeout"])
+
+
 def main():
+    init_logging_and_dirs()
     pth = CONFIG["pth"]
     dwn_pth = os.path.join(pth, "dwn")
     os.makedirs(dwn_pth, exist_ok=True)

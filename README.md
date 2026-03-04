@@ -42,8 +42,7 @@ skips already downloaded files >>>
 Create Download Tasks (Each row becomes a DownloadTask object) >>> 
 Parallel Download Execution:
 - ThreadPoolExecutor(max_workers=CONFIG["max_workers"])
-- Each thread: Downloads PDF in chunks, Saves file, Validates file using pypdf, Returns structured result >>>Save Log: download_log_improved.xlsx, download_log_improved.log
-
+- Each thread: downloads PDF in chunks, saves file, validates file using pypdf, returns structured result >>> Save Log: download_log_improved.xlsx, download_log_improved.log
 
 
 
