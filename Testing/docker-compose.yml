@@ -1,0 +1,8 @@
+version: '3.11'
+services:
+  pdf_downloader:
+    build: .
+    container_name: pdf_downloader
+    volumes:
+      - .:/app
+    command: python app.py
