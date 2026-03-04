@@ -18,6 +18,6 @@ CONFIG = {
     "other_url_column": "Report HTML Address",  # column AM
     "max_workers": 10,  # parallel downloads
     "download_timeout": 30,  # seconds before a download is considered failed
-    "Prototype": False,  # if True, only download first 10 files for testing
-    "Prototype_count": 100,  # number of files to download in prototype mode
+    "prototype": False,  # if True, download prototype_count files for testing
+    "prototype_count": 100,  # number of files to download in prototype mode
 }

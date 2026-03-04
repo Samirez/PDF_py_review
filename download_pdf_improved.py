@@ -202,8 +202,8 @@ def main():
 
     logger.info("Starting PDF download process")
     logger.info(
-        f"Prototype: {CONFIG['Prototype']} - only downloading first {CONFIG['Prototype_count']} files for testing"
-        if CONFIG["Prototype"]
+        f"Prototype: {CONFIG['prototype']} - only downloading first {CONFIG['prototype_count']} files for testing"
+        if CONFIG["prototype"]
         else "Downloading all files"
     )
 
@@ -227,10 +227,10 @@ def main():
     ]  # Filter out rows where the file already exists
 
     # Prototype mode: only download first N files for testing
-    if CONFIG["Prototype"]:
-        df2 = df2.head(CONFIG["Prototype_count"])
+    if CONFIG["prototype"]:
+        df2 = df2.head(CONFIG["prototype_count"])
         logger.info(
-    f"Prototype mode: only downloading first {CONFIG['Prototype_count']} files for testing" )
+    f"Prototype mode: only downloading first {CONFIG['prototype_count']} files for testing" )
 
     tasks = [
         DownloadTask(
