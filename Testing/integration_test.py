@@ -135,6 +135,10 @@ def test_integration_skip_existing_files(tmp_path):
         assert existing_pdf.stat().st_size == original_size  # Size unchanged
         assert existing_pdf.read_bytes() == original_content  # Content unchanged
         
+        # Verify BR001's DataFrame status columns were NOT updated (file was skipped)
+        assert df2.at["BR001", "pdf_downloaded"] is None
+        assert df2.at["BR001", "download_error"] is None
+        
         # Verify new file (BR002) WAS downloaded
         new_pdf = dwn_pth / "BR002.pdf"
         assert new_pdf.exists()
