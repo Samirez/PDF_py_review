@@ -5,6 +5,7 @@ import pandas as pd
 import sys
 from pathlib import Path
 import requests
+from pypdf.errors import PdfReadError
 
 # Ensure parent directory is in path for direct execution (conftest.py handles pytest discovery)
 if __name__ == "__main__":
@@ -91,7 +92,7 @@ def test_download_file_pdf_read_error():
         
         with patch('download_files.open', mock_open()):
             with patch('download_files.PdfReader') as mock_pdf:
-                mock_pdf.side_effect = Exception("Invalid PDF structure")
+                mock_pdf.side_effect = PdfReadError("Invalid PDF structure")
                 with patch('download_files.os.path.exists', return_value=True):
                     with patch('download_files.os.remove'):
                         brnum, status, error = download_file(args)
@@ -236,7 +237,7 @@ def test_download_multiple_files_with_corrupt_pdf():
     ]
     
     with patch('download_files.requests.get') as mock_get:
-        # Both return successfully but second has invalid PDF
+        # Both HTTP requests succeed, but first PDF read fails (corrupt)
         mock_response = MagicMock()
         mock_response.raise_for_status = MagicMock()
         mock_response.iter_content.return_value = [b'invalid data']
@@ -277,10 +278,7 @@ def test_download_multiple_files_with_file_write_error():
         mock_response.iter_content.return_value = [b'%PDF-1.4 test']
         mock_get.return_value = mock_response
         
-        # Create two mock_open objects: first raises IOError, second succeeds
-        open_fail = mock_open()
-        open_fail.side_effect = IOError("Permission denied")
-        
+        # Create mock_open for successful case; IOError raised directly for failure case
         open_succeed = mock_open()
         
         def mock_open_side_effect(*args, **kwargs):

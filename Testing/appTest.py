@@ -8,6 +8,7 @@ import sys
 from dataclasses import dataclass
 from typing import Optional
 from pathlib import Path
+from io import BytesIO
 
 # Ensure parent directory is in path for direct execution (conftest.py handles pytest discovery)
 if __name__ == "__main__":
@@ -41,6 +42,27 @@ def check_col_for_url(list_pth, ID, url_column, other_url_column):
     if other_url_column:
         data[other_url_column] = [None]
     return pd.DataFrame(data)
+
+
+def create_minimal_valid_pdf_bytes():
+    """Generate a minimal valid PDF with one blank page using pypdf."""
+    try:
+        from pypdf import PdfWriter
+        writer = PdfWriter()
+        writer.add_blank_page(width=612, height=792)
+        output = BytesIO()
+        writer.write(output)
+        return output.getvalue()
+    except ImportError:
+        # Fallback: return a minimal PDF structure if pypdf is unavailable
+        return (
+            b"%PDF-1.4\n"
+            b"1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+            b"2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+            b"3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]>>endobj\n"
+            b"xref\n0 4\n0000000000 65535 f \n0000000010 00000 n \n0000000063 00000 n \n0000000116 00000 n \n"
+            b"trailer<</Size 4/Root 1 0 R>>\nstartxref\n169\n%%EOF"
+        )
 
 
 @dataclass
@@ -123,15 +145,30 @@ def test_check_if_valid_pdf(tmp_path):
     if check_if_valid_pdf is None:
         pytest.skip("check_if_valid_pdf is not available in app module")
     test_pdf = tmp_path / "test.pdf"
-    test_pdf.write_bytes(b"%PDF-1.4\n")
+    test_pdf.write_bytes(create_minimal_valid_pdf_bytes())
     try:
         is_valid = check_if_valid_pdf(str(test_pdf))
         assert isinstance(is_valid, bool)
+        assert is_valid is True  # Valid PDF should return True
     except Exception as e:
         pytest.fail(f"check_if_valid_pdf raised an exception: {e}")
 
 
-@pytest.mark.asyncio
+def test_check_if_invalid_pdf(tmp_path):
+    import app
+    check_if_valid_pdf = getattr(app, "check_if_valid_pdf", None)
+    if check_if_valid_pdf is None:
+        pytest.skip("check_if_valid_pdf is not available in app module")
+    test_pdf = tmp_path / "invalid.pdf"
+    test_pdf.write_bytes(b"This is not a valid PDF file")  # Non-PDF content
+    try:
+        is_valid = check_if_valid_pdf(str(test_pdf))
+        assert isinstance(is_valid, bool)
+        assert is_valid is False  # Invalid content should return False
+    except Exception as e:
+        pytest.fail(f"check_if_valid_pdf raised an exception: {e}")
+
+
 async def fetch_pdf(session, url):
     print(f"Fetching PDF from URL: {url}", flush=True)
     async with session.get(url) as response:

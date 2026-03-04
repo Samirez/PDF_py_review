@@ -19,7 +19,8 @@ import os
 import socket
 import glob
 import requests
-from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
+import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 
 socket.setdefaulttimeout(15)  # Global timeout for all URL requests
@@ -93,11 +94,13 @@ def download_multiple_files(args_list, df2):
             try:
                 brnum, status, error = future.result(timeout=90)
                 # Here you can log the result (e.g., update df2 with status)
-            except TimeoutError:
+            except concurrent.futures.TimeoutError:
                 brnum = futures[future]
                 status = "Ikke downloaded"
+                # Note: future.cancel() is ineffective here since the task is already running;
+                # status and error are set to indicate timeout to the caller, and the task
+                # will continue executing in the background or be cleaned up when the pool shuts down
                 error = "timeout"
-                future.cancel()
             except Exception as e:
                 brnum = futures[future]
                 status = "Ikke downloaded"

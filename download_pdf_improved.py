@@ -171,15 +171,21 @@ def download_multiple_files(tasks, df2, max_workers):
 def init_logging_and_dirs():
     pth = CONFIG["pth"]
     os.makedirs(pth, exist_ok=True)
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.FileHandler(os.path.join(pth, "download_log_improved.log")),  # Log to file
-            logging.StreamHandler(),  # Log to console
-        ],
-    )
-    socket.setdefaulttimeout(CONFIG["download_timeout"])
+    
+    # Make logging initialization idempotent by checking if handlers already exist
+    if not logger.handlers:
+        logger.setLevel(logging.INFO)
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        
+        # Add file handler
+        file_handler = logging.FileHandler(os.path.join(pth, "download_log_improved.log"))
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+        
+        # Add console handler
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
 
 
 def main():
