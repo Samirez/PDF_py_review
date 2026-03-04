@@ -242,8 +242,7 @@ def main():
     if CONFIG["Prototype"]:
         df2 = df2.head(CONFIG["Prototype_count"])
         logger.info(
-    f"Prototype mode: only downloading first {
-        CONFIG['Prototype_count']} files for testing" )
+    f"Prototype mode: only downloading first {CONFIG['Prototype_count']} files for testing" )
 
     tasks = [
         DownloadTask(
