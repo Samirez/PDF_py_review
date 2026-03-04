@@ -12292,3 +12292,13 @@ ConnectionResetError: [WinError 10054] En eksisterende forbindelse blev tvangsaf
 2026-02-27 14:34:20,786 - INFO - Downloaded:     1989
 2026-02-27 14:34:20,786 - INFO - Not downloaded: 5717
 2026-02-27 14:34:23,435 - INFO - Log saved to: C:\Users\SPAC-O-6\Desktop\PDF_py\download_log_async.xlsx
+2026-03-04 12:35:58,347 - INFO - Starting PDF download process
+2026-03-04 12:35:58,348 - INFO - Downloading all files
+2026-03-04 12:39:10,376 - INFO - Starting PDF download process
+2026-03-04 12:39:10,376 - INFO - Downloading all files
+2026-03-04 12:39:47,043 - INFO - Starting PDF download process
+2026-03-04 12:39:47,043 - INFO - Downloading all files
+2026-03-04 12:40:32,114 - INFO - Starting PDF download process
+2026-03-04 12:40:32,115 - INFO - Downloading all files
+2026-03-04 12:40:41,857 - INFO - Starting PDF download process
+2026-03-04 12:40:41,858 - INFO - Downloading all files

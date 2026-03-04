@@ -24,11 +24,11 @@ from typing import Optional
 
 #### Config - edit section to fit your needs ####
 CONFIG = {
-    # path to Excel file with URLs
-    "list_pth": r"C:\Users\SPAC-O-6\Desktop\PDF_py\GRI_2017_2020 (1).xlsx",
+    # Use relative paths for cross-platform and Docker compatibility
+    "list_pth": os.path.join(os.path.dirname(__file__), "GRI_2017_2020 (1).xlsx"),  # path to Excel file with URLs
     # base path for downloads and logs - downloaded PDFs will be saved in a
     # "dwn" subfolder, logs will be saved in the base path
-    "pth": r"C:\Users\SPAC-O-6\Desktop\PDF_py",
+    "pth": os.path.dirname(__file__),
     "ID": "BRnum",
     "url_column": "Pdf_URL",  # column AL
     "other_url_column": "Report HTML Address",  # column AM
