@@ -87,7 +87,8 @@ def check_col_for_url(list_pth, ID, url_column, other_url_column):
     return df
 
 
-def check_exiting_files(dwn_pth):
+def check_existing_files(dwn_pth):
+    """Return list of existing PDF basenames without .pdf extension."""
     dwn_files = glob.glob(os.path.join(dwn_pth, "*.pdf"))
     exist = [os.path.basename(f)[:-4] for f in dwn_files]
     return exist
@@ -125,7 +126,8 @@ async def download_file(task, sess, sem):
                         
             # The `chunk_size=8192` parameter helps manage memory usage when downloading large files by reading the content in smaller pieces.
             # PDF validation
-            # Validation is done in a separate thread to avoid blocking the event loop, since pypdf is not asynchonous.
+            # Validation is done in a separate thread to avoid blocking the event loop, since pypdf is not asynchronous.            
+            
             valid = await asyncio.get_running_loop().run_in_executor(
                 None, check_if_valid_pdf, savefile
                 )
@@ -205,7 +207,7 @@ async def main():
         return
     df2 = df.copy()  # This will hold the download status for each brnum
 
-    exist = check_exiting_files(dwn_pth)
+    exist = check_existing_files(dwn_pth)
     df2 = df2[
         ~df2.index.astype(str).isin(exist)
     ]  # Filter out rows where the file already exists

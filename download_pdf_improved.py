@@ -5,8 +5,7 @@ Created on Sun Oct 13 15:37:08 2019
 
 """
 
-#### IF error : "ModuleNotFOundError: no module named pypdf"
-# then uncomment line below (i.e. remove the #):
+#### IF error : "ModuleNotFoundError: no module named pypdf"# then uncomment line below (i.e. remove the #):
 
 # pip install pypdf pandas requests openpyxl tqdm
 
@@ -40,11 +39,14 @@ CONFIG = {
 ########################################################
 
 ### Set up logging ###
+# Ensure the log directory exists
+os.makedirs(CONFIG["pth"], exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler("download_log_improved.log"),  # Log to file
+        logging.FileHandler(os.path.join(CONFIG["pth"], "download_log_improved.log")),  # Log to file
         logging.StreamHandler(),  # Log to console
     ],
 )
@@ -86,7 +88,8 @@ def check_col_for_url(list_pth, ID, url_column, other_url_column):
     return df
 
 
-def check_exiting_files(dwn_pth):
+def check_existing_files(dwn_pth):
+    """Return list of existing PDF basenames without .pdf extension."""
     dwn_files = glob.glob(os.path.join(dwn_pth, "*.pdf"))
     exist = [os.path.basename(f)[:-4] for f in dwn_files]
     return exist
@@ -160,7 +163,7 @@ def download_multiple_files(tasks, df2, max_workers):
             brnum = futures[future]
 
             try:
-                result: DownloadResult = future.result(timeout=30)
+                result: DownloadResult = future.result()
 
             except Exception as e:
                 #brnum = futures[future]
@@ -203,7 +206,7 @@ def main():
         return
     df2 = df.copy()  # This will hold the download status for each brnum
 
-    exist = check_exiting_files(dwn_pth)
+    exist = check_existing_files(dwn_pth)
     df2 = df2[
         ~df2.index.astype(str).isin(exist)
     ]  # Filter out rows where the file already exists

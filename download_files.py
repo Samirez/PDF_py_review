@@ -8,8 +8,7 @@ Downloads PDF reports from URLs in Excel file.
 Produces a log showing downloaded / not downloaded status.
 """
 
-#### IF error : "ModuleNotFOundError: no module named pypdf"
-# then uncomment line below (i.e. remove the #):
+#### IF error : "ModuleNotFoundError: no module named pypdf"# then uncomment line below (i.e. remove the #):
 
 # pip install pypdf
 
@@ -64,12 +63,18 @@ def download_file(args):
                 if len(reader.pages) > 0:
                     return brnum, "Downloaded", None
                 else:
-                    return brnum, "Ikke downloaded - PDF has no pages", None
+                    os.remove(savefile)
+                    return brnum, "Ikke downloaded", "PDF has no pages"
 
         except Exception as e:
+            if os.path.exists(savefile):
+                os.remove(savefile)
             return brnum, "Ikke downloaded", str(e)
     except Exception as e:
+        if os.path.exists(savefile):
+            os.remove(savefile)
         return brnum, "Ikke downloaded", str(e)
+    
 
 def download_multiple_files(args_list, df2):
     # Download files using thread pool
@@ -86,7 +91,7 @@ def download_multiple_files(args_list, df2):
         )
         for i, future in enumerate(progress, 1):
             try:
-                brnum, status, error = future.result(timeout=30)
+                brnum, status, error = future.result()
                 # Here you can log the result (e.g., update df2 with status)
             except Exception as e:
                 brnum = futures[future]
@@ -131,10 +136,14 @@ def main():
     args_list = [
         (brnum, df2.at[brnum, "Pdf_URL"], dwn_pth, 15) for brnum in df2.index
     ]
-    download_multiple_files(args_list, df2)
     
-    print(f"Downloaded:     {(df2['pdf_downloaded'] == 'Downloaded').sum()}")
-    print(f"Not downloaded: {(df2['pdf_downloaded'] != 'Downloaded').sum()}")
+    if args_list:
+        download_multiple_files(args_list, df2)
+        print(f"Downloaded:     {(df2['pdf_downloaded'] == 'Downloaded').sum()}")
+        print(f"Not downloaded: {(df2['pdf_downloaded'] != 'Downloaded').sum()}")
+    else:
+        print("No new files to download.")
+    
     log_path = os.path.join(pth, "download_log.xlsx")
     df2.to_excel(log_path)
 

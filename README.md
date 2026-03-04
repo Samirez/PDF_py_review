@@ -13,7 +13,7 @@ pip install pandas pypdf requests openpyxl tqdm
 | requests           | HTTP downloads           |
 | openpyxl           | Excel writing engine     |
 | tqdm               | Progress bar             |
-| concurrent.futures | Threading                |
+| concurrent.futures | Threading (standard library, no pip install required) |
 
 ##### Architecture 
 
@@ -42,8 +42,7 @@ skips already downloaded files >>>
 Create Download Tasks (Each row becomes a DownloadTask object) >>> 
 Parallel Download Execution:
 - ThreadPoolExecutor(max_workers=CONFIG["max_workers"])
-- Each thread: Downloads PDF in chunks, Saves file Validates, file using pypdf, Returns structured result >>>
-Save Log: download_log_improved.xlsx, download_log_improved.log
+- Each thread: Downloads PDF in chunks, Saves file, Validates file using pypdf, Returns structured result >>>Save Log: download_log_improved.xlsx, download_log_improved.log
 
 
 
