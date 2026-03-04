@@ -5,7 +5,7 @@ PDF Downloader - GRI 2017-2020 (1)
 Downloads PDF reports from URLs in Excel file.
 """
 
-#### IF error : "ModuleNotFOundError: no module named pypdf"
+# IF error : "ModuleNotFOundError: no module named pypdf"
 # then uncomment line below (i.e. remove the #):
 
 # pip install pypdf pandas tqdm aiohttp aiofiles
@@ -20,7 +20,6 @@ from tqdm.asyncio import tqdm
 import pandas as pd
 from pypdf import PdfReader
 import os
-import socket
 import glob
 import logging
 
@@ -29,10 +28,10 @@ from typing import Optional
 
 #### Config - edit section to fit your needs ####
 CONFIG = {
-    #"list_pth": "/data/GRI_2017_2020 (1).xlsx", # path to Excel file with URLs
-    #"pth": "/data", # base path for downloads and logs - downloaded PDFs will be saved in a "dwn" subfolder, logs will be saved in the base path
-    "list_pth": r"C:\Users\SPAC-O-6\Desktop\PDF_py\GRI_2017_2020 (1).xlsx", # path to Excel file with URLs
-    "pth": r"C:\Users\SPAC-O-6\Desktop\PDF_py", #!!!! use environment variables for paths to make it more flexible and compatible with different environments (e.g. local, cloud, container)
+    # "list_pth": "/data/GRI_2017_2020 (1).xlsx", # path to Excel file with URLs
+    # "pth": "/data", # base path for downloads and logs - downloaded PDFs will be saved in a "dwn" subfolder, logs will be saved in the base path
+    "list_pth": r"C:\Users\SPAC-O-6\Desktop\PDF_py\GRI_2017_2020 (1).xlsx",  # path to Excel file with URLs
+    "pth": r"C:\Users\SPAC-O-6\Desktop\PDF_py",  # !!!! use environment variables for paths to make it more flexible and compatible with different environments (e.g. local, cloud, container)
     "ID": "BRnum",
     "url_column": "Pdf_URL",  # column AL
     "other_url_column": "Report HTML Address",  # column AM
@@ -57,7 +56,9 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-### Define Classes
+# Define Classes
+
+
 @dataclass
 class DownloadTask:  # A simple data class to hold the result of a single download attempt
     brnum: str
@@ -71,11 +72,13 @@ class DownloadTask:  # A simple data class to hold the result of a single downlo
 class DownloadResult:  # A simple data class to hold the status of a download attempt
     brnum: str
     status: str  # e.g., "Downloaded", "Ikke downloaded"
-    url_used: str  # the URL that was actually used for the download attempt (either from url_column or other_url_column)
+    # the URL that was actually used for the download attempt (either from
+    # url_column or other_url_column)
+    url_used: str
     error: Optional[str]
 
 
-### Define functions
+# Define functions
 def check_col_for_url(list_pth, ID, url_column, other_url_column):
     df = pd.read_excel(list_pth, sheet_name=0, index_col=ID)
     if url_column not in df.columns:
@@ -102,9 +105,10 @@ def check_if_valid_pdf(savefile):
             return len(reader.pages) > 0
     except Exception:
         return False
-    
+
+
 async def download_file(task, sess, sem):
-    
+
     savefile = os.path.join(task.output_dir, str(task.brnum) + ".pdf")
 
     urls_to_try = [task.url_column]
@@ -118,33 +122,36 @@ async def download_file(task, sess, sem):
             async with sem:
                 timeout = aiohttp.ClientTimeout(total=task.timeout)
                 async with sess.get(url, timeout=timeout) as response:
-                    response.raise_for_status() # Check if the request was successful (status code 200)
+                    response.raise_for_status()  # Check if the request was successful (status code 200)
                     async with aiofiles.open(savefile, "wb") as file:
                         async for chunk in response.content.iter_chunked(8192):
                             if chunk:
                                 await file.write(chunk)
-                        
+
             # The `chunk_size=8192` parameter helps manage memory usage when downloading large files by reading the content in smaller pieces.
             # PDF validation
-            # Validation is done in a separate thread to avoid blocking the event loop, since pypdf is not asynchronous.            
-            
+            # Validation is done in a separate thread to avoid blocking the
+            # event loop, since pypdf is not asynchronous.
+
             valid = await asyncio.get_running_loop().run_in_executor(
                 None, check_if_valid_pdf, savefile
                 )
-            if valid:      
-            
+            if valid:
+
                 return DownloadResult(
-                    brnum=task.brnum, 
-                    status="Downloaded", 
-                    url_used=url, 
+                    brnum=task.brnum,
+                    status="Downloaded",
+                    url_used=url,
                     error=None
                 )
             else:
                 last_error = f"Downloaded - but PDF is invalid: {savefile}"
         except Exception as e:
             last_error = str(e)
-            logger.warning(f"Ikke downloaded {task.brnum} from {url} - {last_error}")
-            continue #try next URL if available
+            logger.warning(
+    f"Ikke downloaded {
+        task.brnum} from {url} - {last_error}")
+            continue  # try next URL if available
 
     return DownloadResult(
         brnum=task.brnum,
@@ -152,35 +159,35 @@ async def download_file(task, sess, sem):
         url_used="" if not urls_to_try else urls_to_try[-1],
         error=last_error,
     )
-    
+
+
 async def download_multiple_files(tasks, df2, max_workers):
     sem = asyncio.Semaphore(max_workers)
     connector = aiohttp.TCPConnector(limit=max_workers)
-    
-    async with aiohttp.ClientSession(connector=connector) as sess:
-         coroutines = [
-             download_file(task, sess, sem) 
-             for task in tasks
-             ]
-         
-         results = await tqdm.gather(
-             *coroutines,
-             total=len(coroutines),
-             desc="Downloading PDFs",
-             unit="file"
-             #leave=True,
-         )
-         for i, result in enumerate(results, 1):
-           
 
-             df2.loc[result.brnum, "pdf_downloaded"] = result.status
-             df2.loc[result.brnum, "url_used"] = result.url_used
-             if result.error:
-                 df2.loc[result.brnum, "download_error"] = result.error
-             logger.info(f"[{i}/{len(tasks)}] {result.brnum}: {result.status}")
+    async with aiohttp.ClientSession(connector=connector) as sess:
+        coroutines = [
+            download_file(task, sess, sem)
+            for task in tasks
+            ]
+
+        results = await tqdm.gather(
+            *coroutines,
+            total=len(coroutines),
+            desc="Downloading PDFs",
+            unit="file"
+            # leave=True,
+        )
+        for i, result in enumerate(results, 1):
+
+            df2.loc[result.brnum, "pdf_downloaded"] = result.status
+            df2.loc[result.brnum, "url_used"] = result.url_used
+            if result.error:
+                df2.loc[result.brnum, "download_error"] = result.error
+            logger.info(f"[{i}/{len(tasks)}] {result.brnum}: {result.status}")
     return df2
 
-    
+
 async def main():
     pth = CONFIG["pth"]
     dwn_pth = os.path.join(pth, "dwn")
@@ -211,14 +218,13 @@ async def main():
     df2 = df2[
         ~df2.index.astype(str).isin(exist)
     ]  # Filter out rows where the file already exists
-    
 
     # Prototype mode: only download first N files for testing
     if CONFIG["Prototype"]:
         df2 = df2.head(CONFIG["Prototype_count"])
         logger.info(
-            f"Prototype mode: only downloading first {CONFIG['Prototype_count']} files for testing"
-        )
+    f"Prototype mode: only downloading first {
+        CONFIG['Prototype_count']} files for testing" )
 
     tasks = [
         DownloadTask(
@@ -236,17 +242,18 @@ async def main():
     ]
 
     df2 = await download_multiple_files(tasks, df2, max_workers=CONFIG["max_workers"])
-   
+
     print(f"Downloaded:     {(df2['pdf_downloaded'] == 'Downloaded').sum()}")
     print(f"Not downloaded: {(df2['pdf_downloaded'] != 'Downloaded').sum()}")
-    logger.info(f"Downloaded:     {(df2['pdf_downloaded'] == 'Downloaded').sum()}")
-    logger.info(f"Not downloaded: {(df2['pdf_downloaded'] != 'Downloaded').sum()}")
-    
+    logger.info(
+        f"Downloaded:     {(df2['pdf_downloaded'] == 'Downloaded').sum()}")
+    logger.info(
+        f"Not downloaded: {(df2['pdf_downloaded'] != 'Downloaded').sum()}")
+
     log_path = os.path.join(pth, "download_log_async.xlsx")
     df2.to_excel(log_path)
     logger.info(f"Log saved to: {log_path}")
 
-    
 
 if __name__ == "__main__":
     asyncio.run(main())

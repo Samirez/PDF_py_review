@@ -5,8 +5,8 @@ Created on Sun Oct 13 15:37:08 2019
 
 """
 
-#### IF error : "ModuleNotFoundError: no module named pypdf"
-#### then uncomment line below (i.e. remove the #):
+# IF error : "ModuleNotFoundError: no module named pypdf"
+# then uncomment line below (i.e. remove the #):
 
 # pip install pypdf pandas requests openpyxl tqdm
 
@@ -14,7 +14,6 @@ Created on Sun Oct 13 15:37:08 2019
 import pandas as pd
 from pypdf import PdfReader
 import os
-import socket
 import glob
 import logging
 import requests
@@ -25,8 +24,11 @@ from typing import Optional
 
 #### Config - edit section to fit your needs ####
 CONFIG = {
-    "list_pth": r"C:\Users\SPAC-O-6\Desktop\PDF_py\GRI_2017_2020 (1).xlsx", # path to Excel file with URLs
-    "pth": r"C:\Users\SPAC-O-6\Desktop\PDF_py", # base path for downloads and logs - downloaded PDFs will be saved in a "dwn" subfolder, logs will be saved in the base path
+    # path to Excel file with URLs
+    "list_pth": r"C:\Users\SPAC-O-6\Desktop\PDF_py\GRI_2017_2020 (1).xlsx",
+    # base path for downloads and logs - downloaded PDFs will be saved in a
+    # "dwn" subfolder, logs will be saved in the base path
+    "pth": r"C:\Users\SPAC-O-6\Desktop\PDF_py",
     "ID": "BRnum",
     "url_column": "Pdf_URL",  # column AL
     "other_url_column": "Report HTML Address",  # column AM
@@ -43,10 +45,13 @@ CONFIG = {
 logger = logging.getLogger(__name__)
 
 ### SoC: don't write your program as one solid block, instead, break up the code into chunks that are finalized tiny pieces of the system ####
-### Classes and functions should be defined at the top, then the main execution code should be at the bottom, ideally in a main() function. This way, you can test and debug individual pieces of the code without having to run the entire program.
+# Classes and functions should be defined at the top, then the main
+# execution code should be at the bottom, ideally in a main() function.
+# This way, you can test and debug individual pieces of the code without
+# having to run the entire program.
 
 
-### Define Classes
+# Define Classes
 @dataclass
 class DownloadTask:  # A simple data class to hold the result of a single download attempt
     brnum: str
@@ -60,11 +65,13 @@ class DownloadTask:  # A simple data class to hold the result of a single downlo
 class DownloadResult:  # A simple data class to hold the status of a download attempt
     brnum: str
     status: str  # e.g., "Downloaded", "Ikke downloaded"
-    url_used: str  # the URL that was actually used for the download attempt (either from url_column or other_url_column)
+    # the URL that was actually used for the download attempt (either from
+    # url_column or other_url_column)
+    url_used: str
     error: Optional[str]
 
 
-### Define functions
+# Define functions
 def check_col_for_url(list_pth, ID, url_column, other_url_column):
     df = pd.read_excel(list_pth, sheet_name=0, index_col=ID)
     if url_column not in df.columns:
@@ -94,7 +101,7 @@ def check_if_valid_pdf(savefile):
 
 
 def download_file(task):
-    #task = DownloadTask(**task)  # Convert dict to DownloadTask object
+    # task = DownloadTask(**task)  # Convert dict to DownloadTask object
     savefile = os.path.join(task.output_dir, str(task.brnum) + ".pdf")
 
     urls_to_try = [task.url_column]
@@ -111,19 +118,24 @@ def download_file(task):
             with open(savefile, "wb") as file:
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
-                        file.write(
-                            chunk
-                        )  # The `chunk_size=8192` parameter helps manage memory usage when downloading large files by reading the content in smaller pieces.
+                        # The `chunk_size=8192` parameter helps manage memory
+                        # usage when downloading large files by reading the
+                        # content in smaller pieces.
+                        file.write( chunk )
             # PDF validation
             if check_if_valid_pdf(savefile):
                 return DownloadResult(
-                    brnum=task.brnum, status="Downloaded", url_used=url, error=None
-                )
+    brnum=task.brnum,
+    status="Downloaded",
+    url_used=url,
+     error=None )
             else:
                 last_error = f"Downloaded - but PDF is invalid: {savefile}"
         except Exception as e:
             last_error = str(e)
-            logger.warning(f"Ikke downloaded {task.brnum} from {url} - {last_error}")
+            logger.warning(
+    f"Ikke downloaded {
+        task.brnum} from {url} - {last_error}")
             continue
 
     return DownloadResult(
@@ -135,11 +147,13 @@ def download_file(task):
 
 
 def download_multiple_files(tasks, df2, max_workers):
-   
 
     # Download files using thread pool
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(download_file, task): task.brnum for task in tasks}
+        futures = {
+    executor.submit(
+        download_file,
+         task): task.brnum for task in tasks}
         progress = tqdm(
             as_completed(futures),
             total=len(futures),
@@ -154,10 +168,12 @@ def download_multiple_files(tasks, df2, max_workers):
                 result: DownloadResult = future.result()
 
             except Exception as e:
-                #brnum = futures[future]
+                # brnum = futures[future]
                 result = DownloadResult(
-                    brnum=brnum, status="Ikke downloaded", url_used="", error=str(e)
-                )
+    brnum=brnum,
+    status="Ikke downloaded",
+    url_used="",
+     error=str(e) )
 
             df2.loc[brnum, "pdf_downloaded"] = result.status
             df2.loc[brnum, "url_used"] = result.url_used
@@ -171,17 +187,20 @@ def download_multiple_files(tasks, df2, max_workers):
 def init_logging_and_dirs():
     pth = CONFIG["pth"]
     os.makedirs(pth, exist_ok=True)
-    
-    # Make logging initialization idempotent by checking if handlers already exist
+
+    # Make logging initialization idempotent by checking if handlers already
+    # exist
     if not logger.handlers:
         logger.setLevel(logging.INFO)
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-        
+        formatter = logging.Formatter(
+            "%(asctime)s - %(levelname)s - %(message)s")
+
         # Add file handler
-        file_handler = logging.FileHandler(os.path.join(pth, "download_log_improved.log"))
+        file_handler = logging.FileHandler(
+            os.path.join(pth, "download_log_improved.log"))
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
-        
+
         # Add console handler
         console_handler = logging.StreamHandler()
         console_handler.setFormatter(formatter)
@@ -219,14 +238,13 @@ def main():
     df2 = df2[
         ~df2.index.astype(str).isin(exist)
     ]  # Filter out rows where the file already exists
-    
 
     # Prototype mode: only download first N files for testing
     if CONFIG["Prototype"]:
         df2 = df2.head(CONFIG["Prototype_count"])
         logger.info(
-            f"Prototype mode: only downloading first {CONFIG['Prototype_count']} files for testing"
-        )
+    f"Prototype mode: only downloading first {
+        CONFIG['Prototype_count']} files for testing" )
 
     tasks = [
         DownloadTask(
@@ -243,18 +261,20 @@ def main():
         for brnum in df2.index
     ]
 
-    df2 = download_multiple_files(tasks, df2, max_workers=CONFIG["max_workers"])
-   
+    df2 = download_multiple_files(
+    tasks, df2, max_workers=CONFIG["max_workers"])
+
     print(f"Downloaded:     {(df2['pdf_downloaded'] == 'Downloaded').sum()}")
     print(f"Not downloaded: {(df2['pdf_downloaded'] != 'Downloaded').sum()}")
-    logger.info(f"Downloaded:     {(df2['pdf_downloaded'] == 'Downloaded').sum()}")
-    logger.info(f"Not downloaded: {(df2['pdf_downloaded'] != 'Downloaded').sum()}")
-    
+    logger.info(
+        f"Downloaded:     {(df2['pdf_downloaded'] == 'Downloaded').sum()}")
+    logger.info(
+        f"Not downloaded: {(df2['pdf_downloaded'] != 'Downloaded').sum()}")
+
     log_path = os.path.join(pth, "download_log_improved.xlsx")
     df2.to_excel(log_path)
     logger.info(f"Log saved to: {log_path}")
 
-    
 
 if __name__ == "__main__":
     main()
