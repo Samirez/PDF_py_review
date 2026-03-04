@@ -249,18 +249,11 @@ async def test_fetch_multiple_pdfs():
                 assert content == expected_content
 
 
-# Example: test_integration_full_download_flow
-def test_download_flow_success(tmp_path):
-    """Real flow: read Excel → download PDF → write log"""
-    # Create minimal test Excel file with URLs
-    # Call main() or download_flow()
-    # Verify log file created with correct schema
-    # Verify downloaded PDF exists
-    pass
-
-def test_download_flow_handles_existing_files(tmp_path):
-    """Verify skip logic for already-downloaded files"""
-    # Create test PDF in dwn/ directory
-    # Run flow again
-    # Verify it wasn't re-downloaded
-    pass
+if __name__ == "__main__":
+    # Run tests using pytest's programmatic runner with full pytest-asyncio support
+    exit_code = pytest.main([__file__, "-v"])
+    if exit_code == 0:
+        print("\n✅ All tests passed!", flush=True)
+    else:
+        print("\n❌ Some tests failed!", flush=True)
+    exit(exit_code)
