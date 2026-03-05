@@ -215,3 +215,6 @@ def test_integration_batch_download_mixed_results(tmp_path):
 
         # Verify error recorded
         assert df2.at["BR003", "download_error"] is not None
+
+if __name__ == "__main__":
+    pytest.main([__file__])
